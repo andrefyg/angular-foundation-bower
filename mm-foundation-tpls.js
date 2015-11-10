@@ -30,7 +30,7 @@ angular.module('mm.foundation.accordion', [])
       });
     }
   };
-  
+
   // This is called from the accordion-group directive to add itself to the accordion
   this.addGroup = function(groupScope) {
     var that = this;
@@ -83,7 +83,7 @@ angular.module('mm.foundation.accordion', [])
       accordionCtrl.addGroup(scope);
 
       scope.isOpen = false;
-      
+
       if ( attrs.isOpen ) {
         getIsOpen = $parse(attrs.isOpen);
         setIsOpen = getIsOpen.assign;
@@ -229,7 +229,7 @@ angular.module('mm.foundation.buttons', [])
       function getFalseValue() {
         return getCheckboxValue(attrs.btnCheckboxFalse, false);
       }
-      
+
       function getCheckboxValue(attributeValue, defaultValue) {
         var val = scope.$eval(attributeValue);
         return angular.isDefined(val) ? val : defaultValue;
@@ -427,6 +427,7 @@ angular.module('mm.foundation.dropdownToggle', [ 'mm.foundation.position', 'mm.f
       };
 
       var onClick = function (event) {
+        var windowWidth = $window.innerWidth;
         dropdown = angular.element($document[0].querySelector(attrs.dropdownToggle));
         var elementWasOpen = (element === openElement);
 
@@ -440,7 +441,7 @@ angular.module('mm.foundation.dropdownToggle', [ 'mm.foundation.position', 'mm.f
         if (!elementWasOpen && !element.hasClass('disabled') && !element.prop('disabled')) {
           dropdown.css('display', 'block'); // We display the element so that offsetParent is populated
           dropdown.addClass('f-open-dropdown');
-          
+
           var offset = $position.offset(element);
           var parentOffset = $position.offset(angular.element(dropdown[0].offsetParent));
           var dropdownWidth = dropdown.prop('offsetWidth');
@@ -456,9 +457,10 @@ angular.module('mm.foundation.dropdownToggle', [ 'mm.foundation.position', 'mm.f
           }
           else {
             var left = Math.round(offset.left - parentOffset.left);
-            var rightThreshold = $window.innerWidth - dropdownWidth - 8;
+            var rightThreshold = $window.innerWidth - parentOffset.left - dropdownWidth - 8;
             if (left > rightThreshold) {
-                left = rightThreshold;
+                console.debug($position.position(element).width);
+                left = left - dropdownWidth + $position.position(element).width;
                 dropdown.removeClass('left').addClass('right');
             }
             css.left = left + 'px';
@@ -476,7 +478,11 @@ angular.module('mm.foundation.dropdownToggle', [ 'mm.foundation.position', 'mm.f
           openElement = element;
 
           closeMenu = function (event) {
+            if (event && event.type == 'resize' && event.target.innerWidth == windowWidth) {
+              return;
+            }
             $document.off('click', closeMenu);
+            angular.element($window).unbind('resize', closeMenu);
             dropdown.css('display', 'none');
             dropdown.removeClass('f-open-dropdown');
             element.removeClass('expanded');
@@ -487,6 +493,18 @@ angular.module('mm.foundation.dropdownToggle', [ 'mm.foundation.position', 'mm.f
             }
           };
           $document.on('click', closeMenu);
+          angular.element($window).bind('resize', closeMenu);
+
+          repositionMenu = function() {
+            if (!!openElement) {
+              var left = $position.position(element).left;
+              if (dropdown.hasClass('right')) {
+                left = left - dropdownWidth + $position.position(element).width;
+              }
+              dropdown.css('left', left);
+            }
+          };
+          angular.element($window).on('resize', repositionMenu);
         }
       };
 
@@ -499,6 +517,7 @@ angular.module('mm.foundation.dropdownToggle', [ 'mm.foundation.position', 'mm.f
       element.on('click', onClick);
       element.on('$destroy', function() {
         element.off('click', onClick);
+        angular.element($window).off('resize', onClick);
       });
     }
   };
@@ -1639,7 +1658,7 @@ angular.module( 'mm.foundation.tooltip', [ 'mm.foundation.position', 'mm.foundat
 
   // The options specified to the provider globally.
   var globalOptions = {};
-  
+
   /**
    * `options({})` allows global configuration of all tooltips in the
    * application.
@@ -1708,7 +1727,7 @@ angular.module( 'mm.foundation.tooltip', [ 'mm.foundation.position', 'mm.foundat
 
       var startSym = $interpolate.startSymbol();
       var endSym = $interpolate.endSymbol();
-      var template = 
+      var template =
         '<div '+ directiveName +'-popup '+
           'title="'+startSym+'tt_title'+endSym+'" '+
           'content="'+startSym+'tt_content'+endSym+'" '+
@@ -1833,7 +1852,7 @@ angular.module( 'mm.foundation.tooltip', [ 'mm.foundation.position', 'mm.foundat
               // Set the initial positioning.
               tooltip.css({ top: 0, left: 0, display: 'block' });
 
-              // Now we add it to the DOM because need some info about it. But it's not 
+              // Now we add it to the DOM because need some info about it. But it's not
               // visible yet anyway.
               if ( appendToBody ) {
                   $document.find( 'body' ).append( tooltip );
@@ -1860,7 +1879,7 @@ angular.module( 'mm.foundation.tooltip', [ 'mm.foundation.position', 'mm.foundat
               //if tooltip is going to be shown after delay, we must cancel this
               $timeout.cancel( popupTimeout );
 
-              // And now we remove it from the DOM. However, if we have animation, we 
+              // And now we remove it from the DOM. However, if we have animation, we
               // need to wait for it to expire beforehand.
               // FIXME: this is a placeholder for a port of the transitions library.
               if ( scope.tt_animation ) {
@@ -2419,7 +2438,7 @@ angular.module('mm.foundation.tabs', [])
             return;
           }
           // Note this watcher also initializes and assigns scope.active to the
-          // attrs.active expression.          
+          // attrs.active expression.
           setActive(scope.$parent, active);
           if (active) {
             tabsetCtrl.select(scope);
